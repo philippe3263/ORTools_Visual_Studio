@@ -1,6 +1,6 @@
 
 // Authors : Ph. Lacomme
-// Date : 2019, July 7th
+// Date : 2019, July 27th
 //
 // Validation on Visual Studio 2017
 
@@ -33,7 +33,7 @@ using namespace operations_research;
 		IntVar **Q;
 		Q = solver.MakeIntVarArray(n, 0, n-1, "Q");
 		
-		// définition des variables et de leur domaine
+		// dÃ©finition des variables et de leur domaine
 		Constraint *C0 = solver.MakeLessOrEqual(Q[0], n-1);
 		solver.AddConstraint(C0);
 		Constraint *C1 = solver.MakeLessOrEqual(Q[1], n - 1);
