@@ -1,7 +1,7 @@
 
 // Authors : Ph. Lacomme (placomme@isima.fr)
 //
-// Date : 2019, august 11th - wenesday
+// Date : 2019, august 11th - sunday
 //
 // Validation on Visual Studio 2017
 //
