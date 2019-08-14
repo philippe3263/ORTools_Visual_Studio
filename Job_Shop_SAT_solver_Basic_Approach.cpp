@@ -1,7 +1,7 @@
 
 // Authors : Ph. Lacomme (placomme@isima.fr)
 //
-// Date : 2019, august 11th - wenesday
+// Date : 2019, august 14th - wenesday
 //
 // Validation on Visual Studio 2017
 //
@@ -12,12 +12,12 @@
 // Note: this is a bad formulation that not takes advantages
 // of the Constraint Programming Solver capabilities.
 //
-// See :   "De la programmation linéaire à la programmation par contraites "
+// See :   "De la programmation linÃ©aire Ã  la programmation par contraites "
 //         authors : Bourreau, Gondran, Lacomme, Vinot
 //         Ed. Ellipses - ISBN-10 : 9782340-029460
 //         Published : February 2019
 // and
-//         "Programmation par contraites : démarches de modélisation pour des problèmes d'optimisation "
+//         "Programmation par contraites : dÃ©marches de modÃ©lisation pour des problÃ¨mes d'optimisation "
 //         authors : Bourreau, Gondran, Lacomme, Vinot
 //         Ed. Ellipses 
 //         Published : to appear in february 2020
@@ -67,9 +67,9 @@ using namespace sat;
 		P[1][0] = 5; 		P[1][1] = 4;		P[1][2] = 10;
 		P[2][0] = 12;		P[2][1] = 7;		P[2][2] = 4;
 
-		Tab[0][0] = 0;	Tab[0][1] = 1;	Tab[0][2] = 2;
-		Tab[1][0] = 3;	Tab[1][1] = 4;	Tab[1][2] = 5;
-		Tab[2][0] = 6;	Tab[2][1] = 7;	Tab[2][2] = 8;
+		Tab[0][0] = 0;		Tab[0][1] = 1;		Tab[0][2] = 2;
+		Tab[1][0] = 3;		Tab[1][1] = 4;		Tab[1][2] = 5;
+		Tab[2][0] = 6;		Tab[2][1] = 7;		Tab[2][2] = 8;
 
 
 
