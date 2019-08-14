@@ -1,7 +1,7 @@
 
 // Authors : Ph. Lacomme (placomme@isima.fr)
 //
-// Date : 2019, august 11th - wenesday
+// Date : 2019, august 14th - wenesday
 //
 // Validation on Visual Studio 2017
 //
@@ -12,12 +12,12 @@
 // Note: this is a formulation based on the Cumulative global constraint and non overlap constraint
 // that is not the best approach indeed but an acceptable one....
 //
-// See :   "De la programmation linéaire à la programmation par contraites "
+// See :   "De la programmation linÃ©aire Ã  la programmation par contraites "
 //         authors : Bourreau, Gondran, Lacomme, Vinot
 //         Ed. Ellipses - ISBN-10 : 9782340-029460
 //         Published : February 2019
 // and
-//         "Programmation par contraites : démarches de modélisation pour des problèmes d'optimisation "
+//         "Programmation par contraites : dÃ©marches de modÃ©lisation pour des problÃ¨mes d'optimisation "
 //         authors : Bourreau, Gondran, Lacomme, Vinot
 //         Ed. Ellipses 
 //         Published : to appear in february 2020
