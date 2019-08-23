@@ -1,6 +1,6 @@
 
 // Authors :	Ph. Lacomme (placomme@isima.fr)
-//				Gwénaël Rault (gwenael.rault@mapotempo.com)
+//		Gwénaël Rault (gwenael.rault@mapotempo.com)
 //
 // Date : 2019, august 22 
 // Updated : 2019, august 23 
