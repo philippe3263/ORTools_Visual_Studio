@@ -1,6 +1,6 @@
 
 // Authors :	Ph. Lacomme (placomme@isima.fr)
-//		Gwénaël Rault (gwenael.rault@mapotempo.com)
+//				Gwénaël Rault (gwenael.rault@mapotempo.com)
 //
 // Date : 2019, august 22 
 // Updated : 2019, august 23 
@@ -458,15 +458,28 @@ void VRP()
 	
 	model.Add(NewSatParameters(parameters));
 
+	// to display all solution that improve the best known solution
+
+	model.Add(	NewFeasibleSolutionObserver(	[&](const CpSolverResponse& r) {
+													float CPU_Time = r.deterministic_time();
+													cout << CPU_Time << " : Best solution found =" << SolutionIntegerValue(r, d) << endl;
+												}
+											)
+	);
+
+
 	const CpSolverResponse response = SolveCpModel(cp_model.Build(), &model);
-	std::cout << CpSolverResponseStats(response) << std::endl;
 
 
 
 	if (response.status() == CpSolverStatus::OPTIMAL)
 	{
-		cout << "solution found..." << endl;
+		cout << "solution found..." << endl << endl;
+		cout << "information on the search..." << endl << endl;
+		std::cout << CpSolverResponseStats(response) << std::endl;
+
 		const int64 makespan = SolutionIntegerValue(response, d);
+		cout << endl;
 		cout << "Makespan = " << makespan << endl;
 
 		for (int i = 1; i < nb_total_nodes; i++)
