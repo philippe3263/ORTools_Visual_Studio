@@ -1,6 +1,6 @@
 
 // Authors :	Ph. Lacomme (placomme@isima.fr)
-//				Gwénaël Rault (gwenael.rault@mapotempo.com)
+//		Gwénaël Rault (gwenael.rault@mapotempo.com)
 //
 // Date : 2019, august 22 
 // Updated : 2019, august 23 
@@ -392,6 +392,11 @@ void VRP()
 								);
 	
 	// third improvement : channeling... propagation in two directions
+
+	// see this page
+    // https://github.com/google/or-tools/blob/4a0e9b1860276a021335aacb8b69e10a0d08942c/ortools/sat/samples/channeling_sample_sat.cc
+	// for a full description of channeling idea
+	//
 	//     S[i] =j <--> pred[j] = i
 	//    
 	// useful only for large instances and not for small scale instances
