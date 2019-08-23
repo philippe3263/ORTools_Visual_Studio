@@ -1,7 +1,9 @@
 
-// Authors : Ph. Lacomme (placomme@isima.fr)
+// Authors :	Ph. Lacomme (placomme@isima.fr)
+//				Gwénaël Rault (gwenael.rault@mapotempo.com)
 //
-// Date : 2019, august 22nd
+// Date : 2019, august 22 
+// Updated : 2019, august 23 
 //
 // Validation on Visual Studio 2017
 //
@@ -37,6 +39,7 @@ using namespace std;
 // solver PPC Sat
 #include "ortools/sat/cp_model.h"
 #include "ortools/util/sorted_interval_list.h"
+#include "ortools/sat/sat_decision.h"
 
 using namespace operations_research;
 using namespace sat;
@@ -105,19 +108,6 @@ void VRP()
 		}
 	}
 
-	// linearisation de T_Prime
-
-	int T_lineaire[nb_total_nodes*nb_total_nodes];
-	int T_Corr[nb_total_nodes][nb_total_nodes];
-	int k = 0;
-	for (int i = 0; i < nb_total_nodes; i++) {
-		for (int j = 0; j < nb_total_nodes; j++) {
-			T_lineaire[k] = T_prime[i][j];
-			T_Corr[i][j] = k;
-			k++;
-		}
-	}
-
 	const Domain domain_successor(1, nb_total_nodes);
 	const Domain domain_assignment(1, V);
 	const Domain domain_rank(0, nb_total_nodes);
@@ -128,6 +118,7 @@ void VRP()
 	const Domain domain_N(1, N+1);
 	const Domain domain_distance(0, H);
 	const Domain domain_volume(0, Q);
+	const Domain domain_large(0, V * 100 + N);
 
 	// variables
 	std::vector<IntVar> s;		// list of successor for nodes 0..N+2V-1
@@ -137,7 +128,8 @@ void VRP()
 	IntVar d;					// total distance
 	std::vector<IntVar> dp;     // distance between two successive node in a trip
 	std::vector<IntVar> q;      // quantite
-
+	std::vector<IntVar> y;      // branching variable
+	std::vector<IntVar> pred;	// list of predecessor for nodes 0..N+2V-1
 
 	// constraint 1 and 2 definition of s
 	
@@ -383,6 +375,77 @@ void VRP()
 	// second improvement : 
 	//  defined y_i = 100xa_i + s_i and branch on y_i
 
+	y.push_back(
+		cp_model.NewIntVar(domain_0).WithName(absl::StrCat("y_", 0))
+	);
+	for (int i = 1; i < N; ++i) {
+		y.push_back(
+			cp_model.NewIntVar(domain_large).WithName(absl::StrCat("y_", i))
+		);
+		LinearExpr ai_si = LinearExpr::ScalProd({ a[i], s[i] }, { 100, 1 });
+		cp_model.AddEquality({ y[i] }, { ai_si });
+	}
+
+	// definition of the strategy
+	cp_model.AddDecisionStrategy(	y, DecisionStrategyProto::CHOOSE_FIRST,
+									DecisionStrategyProto::SELECT_MIN_VALUE
+								);
+	
+	// third improvement : channeling... propagation in two directions
+	//     S[i] =j <--> pred[j] = i
+	//    
+	// useful only for large instances and not for small scale instances
+	//
+
+	pred.push_back(
+		cp_model.NewIntVar(domain_null).WithName(absl::StrCat("pred_0"))
+	);
+	for (int i = 1; i < nb_total_nodes; ++i) {
+		if ( (i>=N) && (i < N + V) )
+		{
+			pred.push_back(
+				cp_model.NewIntVar(domain_0).WithName(absl::StrCat("pred_", i))
+			);
+		}
+		else
+		{
+			pred.push_back(
+				cp_model.NewIntVar(domain_successor).WithName(absl::StrCat("pred_", i))
+			);
+		}
+
+	}
+
+
+	std::vector<IntVar> liste_var_suiv;
+	for (int i = 0; i < nb_total_nodes; i++)
+	{
+		liste_var_suiv.push_back((IntVar)s[i]);
+	}
+	auto span_variables_suiv = absl::Span<const IntVar>(liste_var_suiv);
+
+	std::vector<IntVar> liste_var_pred;
+	for (int i = 0; i < nb_total_nodes; i++)
+	{
+		liste_var_pred.push_back((IntVar)pred[i]);
+	}
+	auto span_variables_pred = absl::Span<const IntVar>(liste_var_pred);
+
+	for (int i = 1; i < N+V; i++) {
+		IntVar suiv;
+		suiv = cp_model.NewIntVar(domain_successor).WithName(absl::StrCat("suiv"));
+		IntVar cour;
+		const Domain domain_i(i, i);
+		cour = cp_model.NewIntVar(domain_i).WithName(absl::StrCat("cour"));
+
+		// suiv = s[cour]
+		cp_model.AddVariableElement(cour, span_variables_suiv, suiv);
+
+		// pred[suiv] = cour
+		cp_model.AddVariableElement(suiv, span_variables_pred, cour);
+	}
+
+
 
 	// objective
 	cp_model.Minimize(d);
@@ -431,6 +494,15 @@ void VRP()
 //-------------------------------------------------------------------------------//
 //-------------------------------------------------------------------------------//
 //-------------------------------------------------------------------------------//
+
+// model performances
+//
+// Machine used for benchmark :  Xeon E5-1630 3.70Ghz with 32 GO of memory (Windows 7 OS)
+//
+// with no improvement : solved to optimality in 10 s
+// with improvement 1 : solved to optimality in 5 s
+// with improvement 1 + 2 : solved to optimality in 1.55 s 
+// with improvement 1 + 2 + 3 : solved to optimality in 1.78 s 
 
 int main(int argc, char** argv) {
 
