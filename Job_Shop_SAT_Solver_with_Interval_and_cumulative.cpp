@@ -146,7 +146,7 @@ using namespace sat;
 
 
 		// constraint 3. one cumulative for each machine	
-		for (int machine = 1; machine <= m; machine++)
+		for (int machine = 0; machine < m; machine++)
 		{
 			std::vector<IntervalVar> liste_variables;
 			for (int i = 0; i < n; i++)
