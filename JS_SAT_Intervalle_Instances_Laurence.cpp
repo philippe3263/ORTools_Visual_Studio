@@ -12,12 +12,12 @@
 // Note: this is a formulation based on the Cumulative global constraint and non overlap constraint
 // that is not the best approach indeed but an acceptable one....
 //
-// See :   "De la programmation linéaire à la programmation par contraites "
+// See :   "De la programmation linÃ©aire Ã  la programmation par contraites "
 //         authors : Bourreau, Gondran, Lacomme, Vinot
 //         Ed. Ellipses - ISBN-10 : 9782340-029460
 //         Published : February 2019
 // and
-//         "Programmation par contraites : démarches de modélisation pour des problèmes d'optimisation "
+//         "Programmation par contraites : dÃ©marches de modÃ©lisation pour des problÃ¨mes d'optimisation "
 //         authors : Bourreau, Gondran, Lacomme, Vinot
 //         Ed. Ellipses 
 //         Published : to appear in february 2020
@@ -28,8 +28,8 @@
 // with a  Xeon E5-1630 3.70Ghz with 32 GO of memory (Windows 7 OS)
 // the following high quality results are obtained with this formulation
 //
-//				BI			BFS			TTb(s)
-//      ---------------------------------------
+//			BI			BFS			TTb(s)
+//      -----------------------------------------------------------------------------
 //		La01	666			666			0.0019 s
 //		La02	655			655			0.00045 s
 //		La03	597			597			0.0008 s
@@ -40,11 +40,11 @@
 //		La08	863			863			0.004 s
 //		La09	951			951			0.0001 s
 //		La10	958			958			0.003 s
-//		La11	1222		1222		0.0006 s
-//		La12	1039		1039		0.7192 s
-//		La13	1150		1150		0.0022 s
-//		La14	1292		1292		0.04401 s
-//		La15	1207		1207		0.02696 s
+//		La11	1222			1222			0.0006 s
+//		La12	1039			1039			0.7192 s
+//		La13	1150			1150			0.0022 s
+//		La14	1292			1292			0.04401 s
+//		La15	1207			1207			0.02696 s
 //		La16	945			945			0.00399 s
 //		La17	784			784			0.00431 s
 //		La18	848			848			0.01514 s
@@ -73,9 +73,9 @@ using namespace std;
 using namespace operations_research;
 using namespace sat;
     
-    // to avoid dynamic memory allocation
-    //
-    const int nmax = 50; //50 jobs max
+   	 // to avoid dynamic memory allocation
+    	//
+    	const int nmax = 50; //50 jobs max
 	const int mmax = 50; //50 machine max
 
 	typedef struct t_instance {
