@@ -28,7 +28,7 @@
 // with a  Xeon E5-1630 3.70Ghz with 32 GO of memory (Windows 7 OS)
 // the following high quality results are obtained with this formulation
 //
-//			BI			BFS			TTb(s)
+//			BI			BFS			TTb(s) (deterministic time)
 //      -----------------------------------------------------------------------------
 //		La01	666			666			0.0019 s
 //		La02	655			655			0.00045 s
@@ -50,7 +50,29 @@
 //		La18	848			848			0.01514 s
 //		La19	842			842			0.073204 s
 //		La20	902			902			0.01910 s
-
+//
+// Note : deterministic time != user time
+//   for example for the LA40 --> user time 23.75 s and deterministic time = 2.02
+//
+// test40 : instance LA040
+// -----------------------
+// CpSolverResponse:
+// status: OPTIMAL
+// objective: 1222
+// best_bound: 1222
+// booleans: 6068
+// conflicts: 30281
+// branches: 104822
+// propagations: 13943778
+// integer_propagations: 25454243
+// walltime: 23.7522
+// usertime: 23.7522
+// deterministic_time: 2.0248
+// 
+// Optimal solution found...
+// Makespan = 1222
+//
+//
 
 #include <iostream>
 using namespace std;
