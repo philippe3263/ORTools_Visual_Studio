@@ -1,9 +1,9 @@
-
+﻿
 // Authors :	Ph. Lacomme (placomme@isima.fr)
 //		Gwénaël Rault (gwenael.rault@mapotempo.com)
 //
-// Date : 2019, august 22 
-// Updated : 2019, august 23 
+// Date : 2019, august 22
+// Updated : 2019, august 26
 //
 // Validation on Visual Studio 2017
 //
@@ -12,12 +12,12 @@
 //
 //
 //
-// See :   "De la programmation linéaire à la programmation par contraites "
+// See :   "De la programmation linéaire à la programmation par contraintes"
 //         authors : Bourreau, Gondran, Lacomme, Vinot
 //         Ed. Ellipses - ISBN-10 : 9782340-029460
 //         Published : February 2019
 // and
-//         "Programmation par contraites : démarches de modélisation pour des problèmes d'optimisation "
+//         "Programmation par contraintes : démarches de modélisation pour des problèmes d'optimisation"
 //         authors : Bourreau, Gondran, Lacomme, Vinot
 //         Ed. Ellipses 
 //         Published : to appear in february 2020
@@ -79,6 +79,14 @@ void VRP()
 		D[i] = 0;
 	}
 
+	// Maximum traveling value
+	int T_max = 0;
+	for (int i = 0; i < N; i++) {
+		for (int j = 0; j < N; j++) {
+			T_max = max(T_max, T[i][j]);
+		}
+	}
+
 	// vehicles capacity
 	int C[V + 1];
 	C[1] = Q;
@@ -108,17 +116,41 @@ void VRP()
 		}
 	}
 
+	// array T_second that take into account the destination index
+	int T_second[nb_total_nodes][nb_total_nodes];
+	for (int i = 0; i < N; i++) {
+		for (int j = 0; j < N; j++) {
+			T_second[i][j] = T[i][j] * 100 + (i == j ? 0 : j);
+		}
+		for (int j = 0; j < V * 2; j++) {
+			int position = N + j;
+			T_second[i][position] = T[i][0] * 100 + j;
+		}
+	}
+	// extra lines
+	for (int i = N; i < nb_total_nodes; i++) {
+		for (int j = 0; j < V * 2; j++) {
+			int position = N + j;
+			T_second[i][position] = 0;
+		}
+		for (int j = 0; j < N; j++) {
+			T_second[i][j] = T[0][j] * 100 + j;
+		}
+	}
+
+	int dps_size = 100 * T_max + nb_total_nodes;
+
 	const Domain domain_successor(1, nb_total_nodes);
 	const Domain domain_assignment(1, V);
 	const Domain domain_rank(0, nb_total_nodes);
 	const Domain domain_0(0, 0);
 	const Domain domain_null(-1, -1);
-	const Domain domain_N_1(1, N);
-	const Domain domain_N_0(0, N);
-	const Domain domain_N(1, N+1);
+	const Domain domain_1_N(1, N);
+	const Domain domain_0_N(0, N);
 	const Domain domain_distance(0, H);
 	const Domain domain_volume(0, Q);
 	const Domain domain_large(0, V * 100 + N);
+	const Domain domain_dps(-1, dps_size);
 
 	// variables
 	std::vector<IntVar> s;		// list of successor for nodes 0..N+2V-1
@@ -127,45 +159,40 @@ void VRP()
 	std::vector<IntVar> p;		// rank in trip 
 	IntVar d;					// total distance
 	std::vector<IntVar> dp;     // distance between two successive node in a trip
+	std::vector<IntVar> dps;	// domain of the variables for the greedy method
 	std::vector<IntVar> q;      // quantite
 	std::vector<IntVar> y;      // branching variable
 	std::vector<IntVar> pred;	// list of predecessor for nodes 0..N+2V-1
 
 	// constraint 1 and 2 definition of s
-	
 	s.push_back(
 		cp_model.NewIntVar(domain_null).WithName(absl::StrCat("S_0"))
 	);
 	for (int i = 1; i < nb_total_nodes; ++i) {
-		if (i < N + V)
-		{
+		if (i < N + V) {
 			s.push_back(
 				cp_model.NewIntVar(domain_successor).WithName(absl::StrCat("S_", i))
 			);
 		}
-		else
-		{
+		else {
 			s.push_back(
 				cp_model.NewIntVar(domain_0).WithName(absl::StrCat("S_", i))
 			);
 		}
-
 	}
 
-	// s_first = s limited to position 1...N+V-1
+	// Array of customer nodes
+	// s_first = s limited to position 1...N+V
 	s_first.push_back(
 		cp_model.NewIntVar(domain_null).WithName(absl::StrCat("S_first_0"))
 	);
 	for (int i = 1; i < N + V; ++i) {
 		s_first.push_back(
-				cp_model.NewIntVar(domain_successor).WithName(absl::StrCat("S_first_", i))
-			);
+			cp_model.NewIntVar(domain_successor).WithName(absl::StrCat("S_first_", i))
+		);
 	}
 
-
-
 	// constraint 3. definition of a
-	
 	a.push_back(
 		cp_model.NewIntVar(domain_0).WithName(absl::StrCat("a_0"))
 	);
@@ -174,80 +201,77 @@ void VRP()
 			cp_model.NewIntVar(domain_assignment).WithName(absl::StrCat("a_", i))
 		);
 	}
-	
+
 	// constraint 4. starting depot and ending depot are pre-assigned to vehicle
-	
-	 for (int i = 1; i <= V; i++) {
-		int position = N + i - 1; // vehicle i --> assign to starting depot number N + i - 1
-		cp_model.AddEquality({ a[position] }, i);
-		position = N + i + V - 1; // vehicle i --> assign to ending depot number N + i + V - 1
-		cp_model.AddEquality({ a[position] }, i);
+	// vehicles have an index increased of 1
+	for (int i = 0; i < V; i++) {
+		int position = N + i; // vehicle i + 1 --> assign to starting depot number N + i
+		cp_model.AddEquality({ a[position] }, i + 1);
+		position = N + V + i; // vehicle i + 1  --> assign to ending depot number N + V + i
+		cp_model.AddEquality({ a[position] }, i + 1);
 	}
-	
 
 	// constraint 5 : rank definition
-	
 	p.push_back(
 		cp_model.NewIntVar(domain_null).WithName(absl::StrCat("p_0"))
 	);
+
+	// Customer node positions
 	for (int i = 1; i < N; i++) {
 		p.push_back(
-			cp_model.NewIntVar(domain_N_1).WithName(absl::StrCat("p_", i))
+			cp_model.NewIntVar(domain_1_N).WithName(absl::StrCat("p_", i))
 		);
 	}
 
-	for (int i = N ; i < N+V; i++) {
+	// Starting depot node positions
+	for (int i = N; i < N + V; i++) {
 		p.push_back(
-			cp_model.NewIntVar(domain_N_0).WithName(absl::StrCat("p_", i))
+			cp_model.NewIntVar(domain_0_N).WithName(absl::StrCat("p_", i))
 		);
 	}
 
+	// Ending depot node positions
 	for (int i = N + V; i < nb_total_nodes; i++) {
 		p.push_back(
-			cp_model.NewIntVar(domain_N_1).WithName(absl::StrCat("p_", i))
+			cp_model.NewIntVar(domain_1_N).WithName(absl::StrCat("p_", i))
 		);
 	}
 
 	// constraint 6 : starting depot have the rank equal to 0
-	 for (int i = 0; i < V; i++) {
+	for (int i = 0; i < V; i++) {
 		int position = N + i;
 		cp_model.AddEquality({ p[position] }, 0);
 	}
-	
 
-	// constraint 7 : the successor are all different for s_first only (node 1 to N+V-1)
-	 for (int i = 1; i < N+V; i++) {
-		 cp_model.AddEquality({ s[i] }, { s_first[i] });
-	 }
-	 cp_model.AddAllDifferent(s_first);
+	// constraint 7 : the successor are all different for s_first only (node 1 to N+V)
+	for (int i = 1; i < N + V; i++) {
+		cp_model.AddEquality({ s[i] }, { s_first[i] });
+	}
+	cp_model.AddAllDifferent(s_first);
 
 	// constraint 8. Node i and s_i have the same assignment ==>  a[ s[i] ] == a_i
-	 std::vector<IntVar> liste_var;
-	 for (int i = 0; i < nb_total_nodes; i++)
-	 {
-		 liste_var.push_back((IntVar)a[i]);
-	 }
-	 auto span_variables = absl::Span<const IntVar>(liste_var);
+	std::vector<IntVar> liste_var;
+	for (int i = 0; i < nb_total_nodes; i++) {
+		liste_var.push_back((IntVar)a[i]);
+	}
+	auto span_variables = absl::Span<const IntVar>(liste_var);
 
-	for (int i = 1; i < N+V; i++) {
+	for (int i = 1; i < N + V; i++) {
 		cp_model.AddVariableElement(s[i], span_variables, a[i]);
-	} 
-
+	}
 
 	// constraint 9. s_i != i
-	 for (int i = 1; i < N + V; i++) {
+	for (int i = 1; i < N + V; i++) {
 		cp_model.AddNotEqual({ s[i] }, i);
 	}
-	
+
 
 	// constraint 10. p[ s[i] ] = p[i] + 1 i.e. p[ s[i] ] =t
-	 std::vector<IntVar> liste_var_p;
-	 for (int i = 0; i < nb_total_nodes; i++)
-	 {
-		 liste_var_p.push_back((IntVar)p[i]);
-	 }
-	 auto span_variables_p = absl::Span<const IntVar>(liste_var_p);
-
+	std::vector<IntVar> liste_var_p;
+	for (int i = 0; i < nb_total_nodes; i++) {
+		liste_var_p.push_back((IntVar)p[i]);
+	}
+	auto span_variables_p = absl::Span<const IntVar>(liste_var_p);
 
 	for (int i = 1; i < N + V; i++) {
 		// t = p[i] + 1
@@ -258,51 +282,41 @@ void VRP()
 		// p[s[i]] = t
 		cp_model.AddVariableElement(s[i], span_variables_p, t);
 	}
-	
 
 	// constraint 11 
 	//   definition of q
-	 
 	q.push_back(
 		cp_model.NewIntVar(domain_null).WithName(absl::StrCat("q_0"))
 	);
 	for (int i = 1; i < nb_total_nodes; ++i) {
-		if ((i >= N) && (i < N + V)) // for a starting depot --> q_i = 0
-		{
+		if ((i >= N) && (i < N + V)) { // for a starting depot --> q_i = 0
 			q.push_back(
 				cp_model.NewIntVar(domain_0).WithName(absl::StrCat("q_", i))
 			);
 		}
-		else
-		{
+		else {
 			q.push_back(
 				cp_model.NewIntVar(domain_volume).WithName(absl::StrCat("q_", i))
 			);
 		}
 	}
 
-
-
 	// constraint 12
-	//
 	// q [i] + D[ S[i] ] = q [ S[i] ]
 	//   i.e. q [i] + u = t
-
 	std::vector<IntVar> liste_var_q;
-	for (int i = 0; i < nb_total_nodes; i++)
-	{
+	for (int i = 0; i < nb_total_nodes; i++) {
 		liste_var_q.push_back((IntVar)q[i]);
 	}
 	auto span_variables_q = absl::Span<const IntVar>(liste_var_q);
 
 	std::vector<int64> liste_coeff_D;
-	for (int i = 0; i < nb_total_nodes; i++)
-	{
+	for (int i = 0; i < nb_total_nodes; i++) {
 		liste_coeff_D.push_back((int64)D[i]);
 	}
 	auto span_coeff_D = absl::Span<const int64>(liste_coeff_D);
 
-	for (int i = 1; i< N+V; i++) {
+	for (int i = 1; i < N + V; i++) {
 		// t = q [ S[i] ]
 		IntVar t;
 		t = cp_model.NewIntVar(domain_volume).WithName(absl::StrCat("t"));
@@ -316,13 +330,10 @@ void VRP()
 		// q[i] + u - t = 0
 		LinearExpr partie_gauche = LinearExpr::ScalProd({ q[i], u, t }, { 1, 1, -1 });
 		cp_model.AddEquality(partie_gauche, 0);
-
 	}
-	
 
-	// constraint 13. T = sum T_i, s_i
+	// constraint 13. T = sum T[i][s_i]
 	// 13.1
-	
 	dp.push_back(
 		cp_model.NewIntVar(domain_0).WithName(absl::StrCat("dp_", 0))
 	);
@@ -331,24 +342,23 @@ void VRP()
 			cp_model.NewIntVar(domain_distance).WithName(absl::StrCat("dp_", i))
 		);
 	}
-	
+
 	//13.2
 	d = cp_model.NewIntVar(domain_distance).WithName(absl::StrCat("d"));
 	// 13.3
-	// dp_i = T_i_s(i)
+	// dp_i = T[i][s[i]]
 	for (int i = 1; i < nb_total_nodes; i++) {  //nb_total_nodes
 		std::vector<int64> liste_coeffs;
 		int64 v = 0;
 		liste_coeffs.push_back((int64)v);
 
-		for (int j = 1; j < nb_total_nodes; j++)
-		{
+		for (int j = 1; j < nb_total_nodes; j++) {
 			liste_coeffs.push_back((int64)T_prime[i][j]);
 		}
 		auto span_coefficient = absl::Span<const int64>(liste_coeffs);
 		cp_model.AddElement(s[i], span_coefficient, dp[i]);
 	}
-	
+
 	// constraint 14. d = sum dp_i
 	std::vector<IntVar> liste_variables;
 	std::vector<int64> liste_coeffs;
@@ -364,17 +374,20 @@ void VRP()
 	auto span_coefficient = absl::Span<const int64>(liste_coeffs);
 	LinearExpr Left_Part = LinearExpr::ScalProd(span_variable, span_coefficient);
 	cp_model.AddEquality(Left_Part, 0);
-	
-	// first improvement : break symetrie
+
+	// first improvement : break symmetry
+	// The successors of the starting nodes are ordered in increasing order
 	// S[i] < S[i+1] --> S[i] - S[i+1]  < 0
-	for (int i = N; i < N+V-1; ++i) {
-		LinearExpr partie_gauche = LinearExpr::ScalProd({ s[i], s[i+1]}, { 1, -1 });
+	for (int i = N; i < N + V - 1; ++i) {
+		LinearExpr partie_gauche = LinearExpr::ScalProd({ s[i], s[i + 1] }, { 1, -1 });
 		cp_model.AddLessThan(partie_gauche, 0);
 	}
-	
+
 	// second improvement : 
 	//  defined y_i = 100xa_i + s_i and branch on y_i
 
+	/*
+	// Remove to let place for the greedy method
 	y.push_back(
 		cp_model.NewIntVar(domain_0).WithName(absl::StrCat("y_", 0))
 	);
@@ -387,14 +400,15 @@ void VRP()
 	}
 
 	// definition of the strategy
-	cp_model.AddDecisionStrategy(	y, DecisionStrategyProto::CHOOSE_FIRST,
-									DecisionStrategyProto::SELECT_MIN_VALUE
-								);
-	
+	cp_model.AddDecisionStrategy(y, DecisionStrategyProto::CHOOSE_FIRST,
+		DecisionStrategyProto::SELECT_MIN_VALUE
+	);
+	*/
+
 	// third improvement : channeling... propagation in two directions
 
 	// see this page
-    // https://github.com/google/or-tools/blob/4a0e9b1860276a021335aacb8b69e10a0d08942c/ortools/sat/samples/channeling_sample_sat.cc
+	// https://github.com/google/or-tools/blob/4a0e9b1860276a021335aacb8b69e10a0d08942c/ortools/sat/samples/channeling_sample_sat.cc
 	// for a full description of channeling idea
 	//
 	//     S[i] =j <--> pred[j] = i
@@ -406,14 +420,12 @@ void VRP()
 		cp_model.NewIntVar(domain_null).WithName(absl::StrCat("pred_0"))
 	);
 	for (int i = 1; i < nb_total_nodes; ++i) {
-		if ( (i>=N) && (i < N + V) )
-		{
+		if ((i >= N) && (i < N + V)) {
 			pred.push_back(
 				cp_model.NewIntVar(domain_0).WithName(absl::StrCat("pred_", i))
 			);
 		}
-		else
-		{
+		else {
 			pred.push_back(
 				cp_model.NewIntVar(domain_successor).WithName(absl::StrCat("pred_", i))
 			);
@@ -421,22 +433,19 @@ void VRP()
 
 	}
 
-
 	std::vector<IntVar> liste_var_suiv;
-	for (int i = 0; i < nb_total_nodes; i++)
-	{
+	for (int i = 0; i < nb_total_nodes; i++) {
 		liste_var_suiv.push_back((IntVar)s[i]);
 	}
 	auto span_variables_suiv = absl::Span<const IntVar>(liste_var_suiv);
 
 	std::vector<IntVar> liste_var_pred;
-	for (int i = 0; i < nb_total_nodes; i++)
-	{
+	for (int i = 0; i < nb_total_nodes; i++) {
 		liste_var_pred.push_back((IntVar)pred[i]);
 	}
 	auto span_variables_pred = absl::Span<const IntVar>(liste_var_pred);
 
-	for (int i = 1; i < N+V; i++) {
+	for (int i = 1; i < N + V; i++) {
 		IntVar suiv;
 		suiv = cp_model.NewIntVar(domain_successor).WithName(absl::StrCat("suiv"));
 		IntVar cour;
@@ -450,7 +459,40 @@ void VRP()
 		cp_model.AddVariableElement(suiv, span_variables_pred, cour);
 	}
 
+	// Greedy method: Determine the closest points and try to branch greedily on them
+	dps.push_back(
+		cp_model.NewIntVar(domain_0).WithName(absl::StrCat("dps_", 0))
+	);
 
+	for (int i = 1; i < nb_total_nodes; ++i) {
+		dps.push_back(
+			cp_model.NewIntVar(domain_dps).WithName(absl::StrCat("dps_", i))
+		);
+	}
+
+	// dps[i] = T_second[i][s[i]]
+	for (int i = 1; i < nb_total_nodes; i++) {  //nb_total_nodes
+		std::vector<int64> liste_coeffs;
+		int64 v = 0;
+		liste_coeffs.push_back((int64)v);
+
+		for (int j = 1; j < nb_total_nodes; j++) {
+			liste_coeffs.push_back((int64)T_second[i][j]);
+		}
+		auto span_coefficient = absl::Span<const int64>(liste_coeffs);
+		cp_model.AddElement(s[i], span_coefficient, dps[i]);
+	}
+
+	//Selecy between DomOverWDeg and MaxRegret
+	//DomOverWDeg
+	/*cp_model.AddDecisionStrategy(dps, DecisionStrategyProto::CHOOSE_FIRST,
+		DecisionStrategyProto::SELECT_MIN_VALUE
+	);*/
+
+	//MaxRegret
+	cp_model.AddDecisionStrategy(dps, DecisionStrategyProto::CHOOSE_MIN_DOMAIN_SIZE,
+		DecisionStrategyProto::SELECT_MIN_VALUE
+	);
 
 	// objective
 	cp_model.Minimize(d);
@@ -460,25 +502,21 @@ void VRP()
 	// Sets a time limit of 10 seconds.
 	SatParameters parameters;
 	parameters.set_max_time_in_seconds(10.0);
-	
+
 	model.Add(NewSatParameters(parameters));
 
 	// to display all solution that improve the best known solution
 
-	model.Add(	NewFeasibleSolutionObserver(	[&](const CpSolverResponse& r) {
-													float CPU_Time = r.deterministic_time();
-													cout << CPU_Time << " : Best solution found =" << SolutionIntegerValue(r, d) << endl;
-												}
-											)
+	model.Add(NewFeasibleSolutionObserver([&](const CpSolverResponse& r) {
+		float CPU_Time = r.deterministic_time();
+		cout << CPU_Time << " : Best solution found =" << SolutionIntegerValue(r, d) << endl;
+		}
+	)
 	);
-
 
 	const CpSolverResponse response = SolveCpModel(cp_model.Build(), &model);
 
-
-
-	if (response.status() == CpSolverStatus::OPTIMAL)
-	{
+	if (response.status() == CpSolverStatus::OPTIMAL) {
 		cout << "solution found..." << endl << endl;
 		cout << "information on the search..." << endl << endl;
 		std::cout << CpSolverResponseStats(response) << std::endl;
@@ -506,9 +544,6 @@ void VRP()
 
 }
 
-
-
-
 //-------------------------------------------------------------------------------//
 //-------------------------------------------------------------------------------//
 //-------------------------------------------------------------------------------//
@@ -524,7 +559,6 @@ void VRP()
 
 int main(int argc, char** argv) {
 
-
 	cout << "VRP resolution" << endl;
 
 	VRP();
@@ -532,7 +566,6 @@ int main(int argc, char** argv) {
 	int lu;
 	cout << "presser 1";
 	cin >> lu;
-
 
 	return EXIT_SUCCESS;
 }
