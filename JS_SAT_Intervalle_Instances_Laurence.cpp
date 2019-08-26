@@ -27,32 +27,51 @@
 //
 // with a  Xeon E5-1630 3.70Ghz with 32 GO of memory (Windows 7 OS)
 // the following high quality results are obtained with this formulation
-//
-//			BI			BFS			TTb(s) (deterministic time)
-//      -----------------------------------------------------------------------------
-//		La01	666			666			0.0019 s
-//		La02	655			655			0.00045 s
-//		La03	597			597			0.0008 s
-//		La04	590			590			0.001 s
-//		La05	593			593			0.0001 s
-//		La06	926			926			0.003  s
-//		La07	890			890			0.004  s
-//		La08	863			863			0.004 s
-//		La09	951			951			0.0001 s
-//		La10	958			958			0.003 s
-//		La11	1222			1222			0.0006 s
-//		La12	1039			1039			0.7192 s
-//		La13	1150			1150			0.0022 s
-//		La14	1292			1292			0.04401 s
-//		La15	1207			1207			0.02696 s
-//		La16	945			945			0.00399 s
-//		La17	784			784			0.00431 s
-//		La18	848			848			0.01514 s
-//		La19	842			842			0.073204 s
-//		La20	902			902			0.01910 s
-//
-// Note : deterministic time != user time
-//   for example for the LA40 --> user time 23.75 s and deterministic time = 2.02
+// 
+// -------------------------------------- -
+// | Int | LB | BF | Opt | User Time |
+// -------------------------------------- -
+// | la01 | 666 | 666 | *| 0.194011  |
+// | la02 | 655 | 655 | *| 0.0450025 |
+// | la03 | 597 | 597 | *| 0.0950054 |
+// | la04 | 590 | 590 | *| 0.119007  |
+// | la05 | 593 | 593 | *| 0.0343419 |
+// | la06 | 926 | 926 | *| 0.53877   |
+// | la07 | 890 | 890 | *| 0.127967  |
+// | la08 | 863 | 863 | *| 0.185568  |
+// | la09 | 951 | 951 | *| 0.148624  |
+// | la10 | 958 | 958 | *| 0.236286  |
+// | la11 | 1222 | 1222 | *| 0.140723  |
+// | la12 | 1039 | 1039 | *| 0.619397  |
+// | la13 | 1150 | 1150 | *| 0.311179  |
+// | la14 | 1292 | 1292 | *| 1.86133   |
+// | la15 | 1207 | 1207 | *| 1.52313   |
+// | la16 | 945 | 945 | *| 0.186183  |
+// | la17 | 784 | 784 | *| 0.222295  |
+// | la18 | 848 | 848 | *| 0.573652  |
+// | la19 | 842 | 842 | *| 1.20389   |
+// | la20 | 902 | 902 | *| 0.478844  |
+// | la21 | 1046 | 1046 | *| 76.2214   |
+// | la22 | 927 | 927 | *| 4.37004   |
+// | la23 | 1032 | 1032 | *| 1.62997   |
+// | la24 | 935 | 935 | *| 27.613    |
+// | la25 | 977 | 977 | *| 13.6576   |
+// | la26 | 1218 | 1218 | *| 18.9807   |
+// | la27 | 1235 | 1240 |   | 120.003   |
+// | la28 | 1216 | 1216 | *| 10.7508   |
+// | la29 | 1152 | 1177 |   | 120.004   |
+// | la30 | 1355 | 1355 | *| 4.52326   |
+// | la31 | 1784 | 1784 | *| 35.5261   |
+// | la32 | 1850 | 1853 |   | 120.005   |
+// | la33 | 1719 | 1719 | *| 21.5469   |
+// | la34 | 1721 | 1721 | *| 56.5498   |
+// | la35 | 1888 | 1888 | *| 23.7264   |
+// | la36 | 1268 | 1268 | *| 9.53905   |
+// | la37 | 1397 | 1397 | *| 6.0415    |
+// | la38 | 1196 | 1196 | *| 113.654   |
+// | la39 | 1233 | 1233 | *| 4.62964   |
+// | la40 | 1222 | 1222 | *| 25.363 |
+// ---------------------------------------
 //
 // test40 : instance LA040
 // -----------------------
@@ -71,8 +90,7 @@
 // 
 // Optimal solution found...
 // Makespan = 1222
-//
-//
+
 
 #include <iostream>
 using namespace std;
@@ -95,12 +113,13 @@ using namespace std;
 using namespace operations_research;
 using namespace sat;
     
-   	 // to avoid dynamic memory allocation
-    	//
-    	const int nmax = 50; //50 jobs max
+    // to avoid dynamic memory allocation
+    //
+    const int nmax = 50; //50 jobs max
 	const int mmax = 50; //50 machine max
 
 	typedef struct t_instance {
+		string nom;
 		int n;            // number of jobs
 		int m;            // number of machines
 		int h;            // maximal lenght of the planning (upper bound of the solution)
@@ -166,6 +185,11 @@ using namespace sat;
 
 	void Job_Shop(t_instance une_instance)
 	{
+		std::ofstream f_res("result.txt", std::ios::app); // output file
+
+		f_res << " | " << une_instance.nom << " | ";
+		f_res << une_instance.BKS << " | ";
+
 
 		int &n = une_instance.n;
 		int &m = une_instance.m;
@@ -301,10 +325,16 @@ using namespace sat;
 
 		if (response.status() == CpSolverStatus::OPTIMAL)
 		{
-			cout << "solution found..." << endl;
+
+			
+
+			cout << "Optimal solution found..." << endl;
 			const int64 makespan = SolutionIntegerValue(response, z);
 			cout << "Makespan = " << makespan << endl;
 			cout << endl;
+
+
+			f_res <<  makespan << " | * | " << response.user_time() << " | " << endl;
 
 			if (n*m < 10) // for small scale instance --> display solution
 			{
@@ -333,7 +363,47 @@ using namespace sat;
 			}
 		}
 		else
-			cout << "sorry, no optimal solution found" << endl;
+			if (response.status() == CpSolverStatus::FEASIBLE)
+			{
+				cout << "solution found..." << endl;
+				const int64 makespan = SolutionIntegerValue(response, z);
+				cout << "Makespan = " << makespan << endl;
+				cout << endl;
+
+				f_res << makespan << " |   | " << response.user_time() << " | " << endl;
+
+
+				if (n*m < 10) // for small scale instance --> display solution
+				{
+					for (int i = 0; i < n; i++)
+					{
+						for (int j = 0; j < m; j++)
+						{
+							int rang = une_instance.Tab[i][j];
+
+							const int64 date_deb = SolutionIntegerValue(response, St[rang]);
+							const int64 date_fin = SolutionIntegerValue(response, Ft[rang]);
+
+							stringstream ss;
+							ss << "St_" << i << "_" << j << "  =  ";
+							string str = ss.str();
+							cout << str << " = " << date_deb << endl;
+
+							stringstream ss2;
+							ss2 << "Ft_" << i << "_" << j << "  =  ";
+							string str2 = ss2.str();
+							cout << str2 << " = " << date_fin << endl;
+
+						}
+					}
+					cout << endl;
+				}
+			}
+			else
+				cout << "sorry, no optimal solution found" << endl;
+
+
+		f_res.close();
 
 	}
 
@@ -351,14 +421,21 @@ using namespace sat;
 
 	t_instance une_instance;
 
+	/*
 	cout << "test1 : instance widget" << endl;
 	cout << "-----------------------" << endl;
 	instance_widget(une_instance);
 	une_instance.h = 100; // borne sup.
 	Job_Shop(une_instance);
+	*/
 	
+	std::ofstream f_res("result.txt"); // output file
+	f_res << "---------------------------------------------------------" << endl;
+	f_res << " | instance |    LB    |   Best bound | Opt | User Time | " << endl;
+	f_res << "---------------------------------------------------------" << endl;
+	f_res.close();
 
-	for (int i = 1; i <= 20; i++)
+	for (int i = 1; i <= 40; i++)
 	{
 
 		cout << "test"<< i <<" : instance LA0" << i << endl;
@@ -372,6 +449,14 @@ using namespace sat;
 		ss << i << ".txt";
 		string str = ss.str();
 
+		stringstream ss2;
+		if (i < 10)
+			ss2 << "la0";
+		else
+			ss2 << "la";
+		ss2 << i;
+		une_instance.nom = ss2.str();
+
 		lire_instance(str, une_instance);
 		une_instance.h = 2000; // borne sup.
 		Job_Shop(une_instance);
@@ -381,8 +466,8 @@ using namespace sat;
 
 	
 
-	int touch;
-	cin >> touch;
+	//int touch;
+//	cin >> touch;
 
 	return EXIT_SUCCESS;
  }
