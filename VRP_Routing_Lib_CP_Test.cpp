@@ -1,5 +1,5 @@
 
-// Authors : Ph. Lacomme
+// Authors : Ph. Lacomme and G. Rault
 // Date : 2019, August 
 //
 //
