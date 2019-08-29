@@ -1,6 +1,6 @@
 
 // Authors :	Ph. Lacomme (placomme@isima.fr)
-//				Gwénaël Rault (gwenael.rault@mapotempo.com)
+//		Gwénaël Rault (gwenael.rault@mapotempo.com)
 //
 //
 // Validation on Visual Studio 2017
@@ -1118,21 +1118,105 @@ void VRP()
 // with improvement 1 + 2 : solved to optimality in 1.55 s 
 // with improvement 1 + 2 + 3 : solved to optimality in 1.78 s 
 //
-// for the DLP_01.txt instance with a maximal computation time of 600s
+// 
 //
+// model performances for the DLP01 instance (40 nodes)
+//
+// Machine used for benchmark :  Xeon E5-1630 3.70Ghz with 32 GO of memory (Windows 7 OS)
+// 
+// Maximal compuation timale : 300s
+//
+//
+// VRP resolution on one instance with 41 nodes
+// 1.93951 : Best solution found =1869
+// 4.9801 : Best solution found =1648
+// 6.15398 : Best solution found =1460
+// 6.33518 : Best solution found =1444
+// 8.93476 : Best solution found =1443
+// 11.3108 : Best solution found =1269
+// 14.2168 : Best solution found =1261
+// 21.5331 : Best solution found =1245
+// 26.8881 : Best solution found =1241
+// 127.912 : Best solution found =1226
+// solution found...
+// 
+// information on the search...
+// 
 // CpSolverResponse:
 // status: FEASIBLE
-// objective: 556
+// objective: 1226
 // best_bound: 338
-// booleans: 554425
-// conflicts: 230580
-// branches: 582717
-// propagations: 3910598662
-// integer_propagations: 532700850
-// walltime: 600.057
-// usertime: 600.057
-// deterministic_time: 713.721
+// booleans: 72740
+// conflicts: 221977
+// branches: 1409557
+// propagations: 751907980
+// integer_propagations: 116658952
+// walltime: 300.05
+// usertime: 300.05
+// deterministic_time: 146.425
 // 
+// 
+// Makespan = 1226
+// 1 :     s_val= 13 dp_val= 15  p_val = 8 a_val= 5 q_val= 160
+// 2 :     s_val= 39 dp_val= 61  p_val = 1 a_val= 1 q_val= 14
+// 3 :     s_val= 52 dp_val= 30  p_val = 6 a_val= 2 q_val= 272
+// 4 :     s_val= 53 dp_val= 94  p_val = 7 a_val= 3 q_val= 287
+// 5 :     s_val= 37 dp_val= 20  p_val = 4 a_val= 3 q_val= 97
+// 6 :     s_val= 31 dp_val= 116  p_val = 2 a_val= 6 q_val= 136
+// 7 :     s_val= 30 dp_val= 17  p_val = 1 a_val= 2 q_val= 96
+// 8 :     s_val= 9 dp_val= 32  p_val = 3 a_val= 5 q_val= 38
+// 9 :     s_val= 20 dp_val= 11  p_val = 4 a_val= 5 q_val= 43
+// 10 :     s_val= 15 dp_val= 14  p_val = 6 a_val= 5 q_val= 59
+// 11 :     s_val= 8 dp_val= 2  p_val = 2 a_val= 5 q_val= 28
+// 12 :     s_val= 5 dp_val= 20  p_val = 3 a_val= 3 q_val= 97
+// 13 :     s_val= 55 dp_val= 46  p_val = 9 a_val= 5 q_val= 280
+// 14 :     s_val= 24 dp_val= 11  p_val = 7 a_val= 4 q_val= 269
+// 15 :     s_val= 1 dp_val= 35  p_val = 7 a_val= 5 q_val= 137
+// 16 :     s_val= 21 dp_val= 2  p_val = 1 a_val= 3 q_val= 14
+// 17 :     s_val= 36 dp_val= 6  p_val = 2 a_val= 7 q_val= 178
+// 18 :     s_val= 26 dp_val= 4  p_val = 3 a_val= 1 q_val= 192
+// 19 :     s_val= 34 dp_val= 13  p_val = 4 a_val= 2 q_val= 136
+// 20 :     s_val= 10 dp_val= 5  p_val = 5 a_val= 5 q_val= 57
+// 21 :     s_val= 12 dp_val= 20  p_val = 2 a_val= 3 q_val= 39
+// 22 :     s_val= 4 dp_val= 31  p_val = 6 a_val= 3 q_val= 167
+// 23 :     s_val= 32 dp_val= 21  p_val = 3 a_val= 4 q_val= 221
+// 24 :     s_val= 54 dp_val= 30  p_val = 8 a_val= 4 q_val= 294
+// 25 :     s_val= 35 dp_val= 10  p_val = 1 a_val= 4 q_val= 36
+// 26 :     s_val= 51 dp_val= 38  p_val = 4 a_val= 1 q_val= 288
+// 27 :     s_val= 11 dp_val= 3  p_val = 1 a_val= 5 q_val= 14
+// 28 :     s_val= 6 dp_val= 10  p_val = 1 a_val= 6 q_val= 58
+// 29 :     s_val= 17 dp_val= 8  p_val = 1 a_val= 7 q_val= 120
+// 30 :     s_val= 38 dp_val= 11  p_val = 2 a_val= 2 q_val= 110
+// 31 :     s_val= 56 dp_val= 73  p_val = 3 a_val= 6 q_val= 194
+// 32 :     s_val= 33 dp_val= 11  p_val = 4 a_val= 4 q_val= 233
+// 33 :     s_val= 40 dp_val= 10  p_val = 5 a_val= 4 q_val= 245
+// 34 :     s_val= 3 dp_val= 9  p_val = 5 a_val= 2 q_val= 214
+// 35 :     s_val= 23 dp_val= 6  p_val = 2 a_val= 4 q_val= 132
+// 36 :     s_val= 57 dp_val= 46  p_val = 3 a_val= 7 q_val= 188
+// 37 :     s_val= 22 dp_val= 13  p_val = 5 a_val= 3 q_val= 102
+// 38 :     s_val= 19 dp_val= 12  p_val = 3 a_val= 2 q_val= 124
+// 39 :     s_val= 18 dp_val= 14  p_val = 2 a_val= 1 q_val= 72
+// 40 :     s_val= 14 dp_val= 10  p_val = 6 a_val= 4 q_val= 257
+// 41 :     s_val= 2 dp_val= 22  p_val = 0 a_val= 1 q_val= 0
+// 42 :     s_val= 7 dp_val= 28  p_val = 0 a_val= 2 q_val= 0
+// 43 :     s_val= 16 dp_val= 28  p_val = 0 a_val= 3 q_val= 0
+// 44 :     s_val= 25 dp_val= 14  p_val = 0 a_val= 4 q_val= 0
+// 45 :     s_val= 27 dp_val= 42  p_val = 0 a_val= 5 q_val= 0
+// 46 :     s_val= 28 dp_val= 100  p_val = 0 a_val= 6 q_val= 0
+// 47 :     s_val= 29 dp_val= 52  p_val = 0 a_val= 7 q_val= 0
+// 48 :     s_val= 58 dp_val= 0  p_val = 0 a_val= 8 q_val= 0
+// 49 :     s_val= 59 dp_val= 0  p_val = 0 a_val= 9 q_val= 0
+// 50 :     s_val= 60 dp_val= 0  p_val = 0 a_val= 10 q_val= 0
+// 51 :     s_val= 0 dp_val= 0  p_val = 5 a_val= 1 q_val= 288
+// 52 :     s_val= 0 dp_val= 0  p_val = 7 a_val= 2 q_val= 272
+// 53 :     s_val= 0 dp_val= 0  p_val = 8 a_val= 3 q_val= 287
+// 54 :     s_val= 0 dp_val= 0  p_val = 9 a_val= 4 q_val= 294
+// 55 :     s_val= 0 dp_val= 0  p_val = 10 a_val= 5 q_val= 280
+// 56 :     s_val= 0 dp_val= 0  p_val = 4 a_val= 6 q_val= 194
+// 57 :     s_val= 0 dp_val= 0  p_val = 4 a_val= 7 q_val= 188
+// 58 :     s_val= 0 dp_val= 0  p_val = 1 a_val= 8 q_val= 0
+// 59 :     s_val= 0 dp_val= 0  p_val = 1 a_val= 9 q_val= 0
+// 60 :     s_val= 0 dp_val= 0  p_val = 1 a_val= 10 q_val= 0
 // 
 //------------------------------------------------------------------------
 
