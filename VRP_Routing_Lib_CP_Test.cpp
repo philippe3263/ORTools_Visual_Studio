@@ -21,9 +21,11 @@ using namespace std;
 
 
 #include "ortools/base/logging.h"
+#include "ortools/base/protoutil.h"
 
 // routing Solveur
 #include <vector>
+#include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/routing.h"
 #include "ortools/constraint_solver/routing_enums.pb.h"
 #include "ortools/constraint_solver/routing_index_manager.h"
@@ -31,6 +33,7 @@ using namespace std;
 
 
 using namespace operations_research;
+
 
 struct DataModel {
 	const std::vector<std::vector<int64>> distance_matrix{
@@ -73,8 +76,105 @@ struct DataModel {
 	const RoutingIndexManager::NodeIndex depot{ 0 };
 };
 
+// Monitor defined to display the new best solution during the search
+namespace {
+	class LoggerMonitor : public SearchMonitor {
+	public:
+		LoggerMonitor(const DataModel data, RoutingModel* routing,
+			RoutingIndexManager* manager)
+			: SearchMonitor(routing->solver())
+			, data_(data)
+			, routing_(routing)
+			, manager_(manager)
+			, solver_(routing->solver())
+			, start_time_(absl::GetCurrentTimeNanos())
+			, pow_(0)
+			, iteration_counter_(0)
+			, best_result_(kint64max)
+			, prototype_(new Assignment(solver_)) {
+			CHECK_NOTNULL(routing->CostVar());
+			prototype_->AddObjective(routing->CostVar());
+		}
 
-void PrintSolution(const DataModel& data, const RoutingIndexManager& manager,
+		virtual void Init() {
+			iteration_counter_ = 0;
+			pow_ = 0;
+			best_result_ = kint64max;
+		}
+
+		virtual bool AtSolution() {
+
+			prototype_->Store();
+			bool new_best = false;
+
+			const IntVar* objective = prototype_->Objective();
+			if (objective->Min() * 1.01 < best_result_) {
+				int64 max_route_distance{ 0 };
+				best_result_ = objective->Min();
+				cout << "Iteration : " << iteration_counter_ << " Cost : " << (int64)(best_result_) << " Time : " << 1e-9 * (absl::GetCurrentTimeNanos() - start_time_) << std::endl;
+				for (int route_nbr = 0; route_nbr < routing_->vehicles(); route_nbr++) {
+					LOG(INFO) << "Route for Vehicle " << route_nbr << ":";
+					std::stringstream route;
+					for (int64 index = routing_->Start(route_nbr); !routing_->IsEnd(index); index = routing_->NextVar(index)->Value()) {
+						route << manager_->IndexToNode(index).value() << " -> ";
+					}
+					int64 end_index = routing_->End(route_nbr);
+					int64 route_distance = routing_->GetMutableDimension("Distance")->CumulVar(end_index)->Min();
+					LOG(INFO) << route.str() << manager_->IndexToNode(end_index).value();
+					LOG(INFO) << "Distance of the route: " << route_distance << "m";
+					max_route_distance = std::max(route_distance, max_route_distance);
+				}
+				cout << "Maximum of the route distances: " << max_route_distance << "m" << endl;
+			}
+
+			++iteration_counter_;
+			if (iteration_counter_ >= std::pow(2, pow_)) {
+				std::cout << "Iteration : " << iteration_counter_ << std::endl;
+				++pow_;
+			}
+			return true;
+		}
+
+		virtual void Copy(const SearchMonitor* const limit) {
+			const LoggerMonitor* const copy_limit =
+				reinterpret_cast<const LoggerMonitor * const>(limit);
+
+			best_result_ = copy_limit->best_result_;
+			iteration_counter_ = copy_limit->iteration_counter_;
+			start_time_ = copy_limit->start_time_;
+		}
+
+		virtual SearchMonitor* MakeClone() const {
+			return solver_->RevAlloc(new LoggerMonitor(data_, routing_, manager_));
+		}
+
+		std::vector<double> GetFinalScore() {
+			return { (double)best_result_, 1e-9 * (absl::GetCurrentTimeNanos() - start_time_), (double)iteration_counter_ };
+		}
+
+		void GetFinalLog() {
+			std::cout << "Final Iteration : " << iteration_counter_ << " Cost : " << (int64)(best_result_) << " Time : " << 1e-9 * (absl::GetCurrentTimeNanos() - start_time_) << std::endl;
+		}
+
+	private:
+		const DataModel data_;
+		RoutingModel* routing_;
+		RoutingIndexManager* manager_;
+		Solver* const solver_;
+		int64 best_result_;
+		double start_time_;
+		int64 pow_;
+		int64 iteration_counter_;
+		std::unique_ptr<Assignment> prototype_;
+	};
+
+} // namespace
+
+LoggerMonitor* MakeLoggerMonitor(const DataModel data, RoutingModel* routing, RoutingIndexManager* manager) {
+	return routing->solver()->RevAlloc(new LoggerMonitor(data, routing, manager));
+}
+
+void PrintSolution(const DataModel data, const RoutingIndexManager& manager,
 	const RoutingModel& routing, const Assignment& solution) {
 	int64 max_route_distance{ 0 };
 	for (int vehicle_id = 0; vehicle_id < data.num_vehicles; ++vehicle_id) {
@@ -134,11 +234,26 @@ void VrpGlobalSpan() {
 	RoutingSearchParameters searchParameters = DefaultRoutingSearchParameters();
 	searchParameters.set_first_solution_strategy(
 		FirstSolutionStrategy::PATH_CHEAPEST_ARC);
+	searchParameters.set_local_search_metaheuristic(LocalSearchMetaheuristic::GUIDED_LOCAL_SEARCH);
+
+	// Limit solve duration
+	int64 time_limite_in_ms = 120000;
+	CHECK_OK(util_time::EncodeGoogleApiProto(absl::Milliseconds(time_limite_in_ms),
+		searchParameters.mutable_time_limit()));
+
+	// Model definition is over
+	routing.CloseModelWithParameters(searchParameters);
+
+	//Add Intermediate solution monitor
+	LoggerMonitor* const logger =
+		MakeLoggerMonitor(data, &routing, &manager);
+	routing.AddSearchMonitor(logger);
 
 	// Solve the problem.
 	const Assignment* solution = routing.SolveWithParameters(searchParameters);
 
 	// Print solution on console.
+	logger->GetFinalLog();
 	PrintSolution(data, manager, routing, *solution);
 }
 
@@ -147,9 +262,13 @@ void VrpGlobalSpan() {
 //-------------------------------------------------------------------------------//
 //-------------------------------------------------------------------------------//
 
- int main(void) {
+int main(void) {
 
 	VrpGlobalSpan();
+
+	int lu;
+	cout << "presser 1";
+	cin >> lu;
 
 	return EXIT_SUCCESS;
 }
